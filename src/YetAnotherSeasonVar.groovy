@@ -18,21 +18,58 @@ class YetAnotherSeasonVar extends WebResourceUrlExtractor {
 
     @Override
     boolean extractorMatches(URL url) {
+        /**
+         * Called once for the whole feed.
+         * For each feed which needs a plugin Serviio tries to match all available plugins to the feed's URL by
+         * calling this method and uses the first plugin that returns true. Use of regular expression is
+         * recommended.
+         *
+         * @param url URL of the whole feed, as entered by the user
+         * @return returns true if the feed's items can be processed by this plugin
+         */
         return url ==~ WEB_RESOURCE_URL_PATTERN
     }
 
     @Override
     int getVersion() {
+        /**
+         * @return returns the version of this plugin. Defaults to “1” if the method is not implemented.
+         */
         return 2
     }
 
     @Override
     String getExtractorName() {
+        /**
+         * @return returns the name of this plugin. Is mostly used for logging and reporting purposes.
+         */
         return this.getClass().getName()
     }
 
     @Override
     protected WebResourceContainer extractItems(URL url, int i) {
+        /**
+         * Performs the extraction of basic information about the resource.
+         * If the object cannot be constructed the method should return null or throw an exception.
+         *
+         * @param url URL of the resource to be extracted. The plugin will have to get the contents on the URL itself.
+         * @param i Max. number of items the user prefers to get back or -1 for unlimited. It is
+         * up to the plugin designer to decide how to limit the results (if at all).
+         * @return returns an instance of org.serviio.library.online.WebResourceContainer.
+         * These are the properties of the class:
+         * • String title – title of the web resource; optional
+         * • String thumbnailUrl – URL of the resource's thumbnail; optional
+         * • List<org.serviio.library.online.WebResourceItem> items – list of extracted content items
+         * WebResourceItem represents basic information about an item and has these properties:
+         * • String title – title of the content item; mandatory
+         * • Date releaseDate – release date of the content; optional
+         * • Map<String,String> additionalInfo – a map of key – value pairs that can include
+         * information needed to retrieve content URL of the item (see extractUrl() method)
+         * • String cacheKey – if present, the URL extracted on Serviio startup will be cached, and
+         * reused rather than re-extracted on subsequent feed refreshes, unless the item has explicitly
+         * expired due to the related ContentURLContainer's expiresOn value or the feed is forcibly
+         * refreshed by the user.
+         */
         String userPreferredTranslation
         String urlQuery = url.getQuery()
         if (urlQuery) {
@@ -70,6 +107,32 @@ class YetAnotherSeasonVar extends WebResourceUrlExtractor {
 
     @Override
     protected ContentURLContainer extractUrl(WebResourceItem webResourceItem, PreferredQuality preferredQuality) {
+        /**
+         * This method is called once for each item included in the created WebResourceContainer.
+         * Performs the actual extraction of content information using the provided information.
+         * If the object cannot be constructed the method should return null or throw an exception.
+         *
+         * @param webResourceItem an instance of org.serviio.library.online.WebResourceItem, as created in
+         * extractItems() method.
+         * @param preferredQuality includes value (HIGH, MEDUIM, LOW) of enumeration
+         * org.serviio.library.online.PreferredQuality. It should be taken into consideration if the
+         * online service offers multiple quality-based renditions of the content.
+         * @return returns an
+         * instance of org.serviio.library.online.ContentURLContainer. These are the properties of the class:
+         * • String contentUrl – URL of the feed item's content; mandatory
+         * • String thumbnailUrl – URL of the feed item's thumbnail; optional
+         * • org.serviio.library.metadata.MediaFileType fileType – file type of the feed item; default is VIDEO
+         * • Date expiresOn – a date the feed item expires on. It can mean the item itself expires or the
+         * item's contentUrl expires; the whole feed will be parsed again on the earliest expiry date of
+         * all feed items; optional
+         * • boolean expiresImmediately – if true Serviio will extract the URL again when the play
+         * request is received to get URL that is valid for the whole playback duration. Note this is
+         * related to the content URL only, the feed item itself should still be valid and available; optional
+         * • String cacheKey – a unique identifier of the content (i.e. this item with this quality) used
+         * as a key to technical metadata cache; required if either expiresOn and/or expiresImmediately is provided
+         * • boolean live – identifies the content as a live stream; optional (default is false)
+         * • String userAgent – specifies a particular User-Agent HPPT header to use when retrieving the content
+         */
         return new ContentURLContainer(
                 fileType: MediaFileType.VIDEO,
                 thumbnailUrl: webResourceItem.additionalInfo.thumbnailUrl,
